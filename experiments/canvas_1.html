@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas 1</title>
+    <style>
+        #canvas, #debug
+        {
+            display: block;
+            margin: 0 auto;
+        }
+
+    </style>
+</head>
+<body>
+    <canvas
+    id="canvas"
+    style="border:1px solid #000000;">
+  </canvas>
+
+  <p>Number Of Shapes (<span id="shapesCountValue">8</span>) : <input type="range" min="4" max="48" value="8"  step="2" id="shapesCount"></p>
+  <p>Rotation Speed : (<span id="rotationSpeedValue">2</span>) <input type="range" min="0" max="10" value="2"  id="rotationSpeed"></p>
+  <p>Gradient Color (<span id="gradientColorValue">#000fff</span>) <input type="color" value="#000fff" id="gradientColor"></p>
+  <p>Gradient Stop (<span id="gradientColorStopValue">#000fff</span>) <input type="color" value="#000fff" id="gradientColorStop"></p>
+  <p>Circular (<span id="lineLengthCapValue">NO</span>) <input type="checkbox" id="lineLenghtCap"></p>
+  <p>Rotation Direction (<span id="rotationDirectionValue">LTR</span>) <input type="checkbox" id="rotationDirection"></p>
+  <p>Width (<span id="widthValue">800</span>) <input type="number" value="800" id="width"></p>
+  <p>Height (<span id="heightValue">600</span>) <input type="number" value="600" id="height"></p>
+
+
+  <script>
+
+    let WIDTH = 800; 
+    let HEIGHT = 600;
+
+    let SHAPES = 12;
+
+    let DIST = WIDTH / SHAPES;
+
+    let CENTER_X = WIDTH / 2;
+    let CENTER_Y = HEIGHT / 2;
+
+   
+    let LINE_LENGTH = 1024; 
+
+
+    let ROTATION_SPEED = 0.02;
+    let GRADIENT_COLOR = '#546E7A';
+    let GRADIENT_COLOR_STOP = '#ffffff';
+    let ROTATION_DIRECTION = 1;
+
+
+    let debug = (str) => {
+        /* let textArea = document.getElementById('debug');
+        textArea.value = textArea.value + str + '\n';
+        textArea.scrollTop = textArea.scrollHeight; */
+    }
+
+    function draw_line( cx, x1, y1, x2, y2 ) {
+        cx.beginPath();
+        cx.moveTo(x1, y1);
+        cx.lineTo(x2, y2);
+        cx.stroke();
+    }
+
+    function fill_polygon (cx, polygon) {
+
+    
+        var grd = cx.createLinearGradient(polygon[0].x, polygon[0].y, polygon[1].x, polygon[1].y);
+        grd.addColorStop(0, GRADIENT_COLOR);
+        grd.addColorStop(1, GRADIENT_COLOR_STOP);
+
+// Fill with gradient
+cx.fillStyle = grd;
+        cx.beginPath();
+        cx.moveTo(polygon[0].x, polygon[0].y);
+        for (let i = 1; i < polygon.length; i++) {
+            cx.lineTo(polygon[i].x, polygon[i].y);
+        }
+        cx.closePath();
+        cx.fill();
+    }
+
+
+    let rotationAngle = 0;
+
+    function run() {
+        let cx = document.getElementById('canvas');
+        cx.width = WIDTH;
+        cx.height = HEIGHT;
+
+
+        let angle_increment = 2.0 * Math.PI / SHAPES;
+       
+
+        const lines = [];
+        const polygons = [];
+
+
+        for (let i = 0; i < SHAPES; i++) {
+
+            let angle = i * angle_increment + rotationAngle;
+
+            let x = CENTER_X + ((Math.cos(angle) * LINE_LENGTH));
+            let y = CENTER_Y + ((Math.sin(angle) * LINE_LENGTH));
+
+            let x_next = CENTER_X + ((Math.cos( (i + 1) *  angle_increment + rotationAngle) * LINE_LENGTH));
+            let y_next = CENTER_Y + ((Math.sin( (i + 1) *  angle_increment + rotationAngle) * LINE_LENGTH));
+
+            
+    
+                lines.push({ x: x, y: y, sibling: { x: x_next, y: y_next} });
+
+                let polygon = [ { x : CENTER_X , y : CENTER_Y }, { x: x, y: y} , {x : x_next, y: y_next} , { x : CENTER_X , y : CENTER_Y }];
+                polygons.push(polygon);
+                fill_polygon(cx.getContext('2d') , polygon );
+            
+
+    
+            draw_line( cx.getContext('2d'), x, y, CENTER_X, CENTER_Y );
+           
+
+            debug(`SHAPE ${i} FROM ${CENTER_X}, ${CENTER_Y} into  x=${x}, y=${y} `);
+        }
+
+       
+
+    
+        debug(`W=${WIDTH}, H=${HEIGHT}, SHAPES=${SHAPES}, DIST=${DIST}`);
+        debug(`CENTER_X=${CENTER_X}, CENTER_Y=${CENTER_Y}`);
+        debug(`angle_increment=${angle_increment}`);
+
+        rotationAngle += ROTATION_SPEED * ROTATION_DIRECTION;
+        requestAnimationFrame(run);
+    }
+
+
+
+
+    window.onload = function() {
+       run();
+       
+       document.querySelector("#rotationSpeed").addEventListener("change", function() {
+        ROTATION_SPEED = this.value / 100;
+        document.querySelector("#rotationSpeedValue").innerHTML = this.value;
+        
+       });
+
+       document.querySelector("#shapesCount").addEventListener("change", function() {
+        SHAPES = this.value;
+        document.querySelector("#shapesCountValue").innerHTML = this.value;
+        
+       });
+
+       document.querySelector("#gradientColor").addEventListener("change", function() {
+        GRADIENT_COLOR = this.value;
+        document.querySelector("#gradientColorValue").innerHTML = this.value;
+        
+       });
+
+       document.querySelector("#gradientColorStop").addEventListener("change", function() {
+        GRADIENT_COLOR_STOP = this.value;
+        document.querySelector("#gradientColorStopValue").innerHTML = this.value;
+        
+       });
+
+       document.querySelector("#lineLenghtCap").addEventListener("change", function() {
+        if (this.checked) {
+            LINE_LENGTH = Math.min(WIDTH, HEIGHT) / 2;
+        } else {
+            LINE_LENGTH = WIDTH;
+        }
+        document.querySelector("#lineLengthCapValue").innerHTML = this.checked ? "YES" : "NO";
+       });
+
+       document.querySelector("#rotationDirection").addEventListener("change", function() {
+        if (this.checked) {
+            ROTATION_DIRECTION = -1;
+        } else {
+            ROTATION_DIRECTION = 1;
+        }
+        document.querySelector("#rotationDirectionValue").innerHTML = this.checked ? "RTL" : "LTR";
+       });
+
+       document.querySelector('#width').addEventListener("change", function() {
+        if (this.value < 50) { alert('Eh?'); return; }
+        WIDTH = this.value;
+        DIST = WIDTH / SHAPES;
+        CENTER_X = WIDTH / 2;
+        CENTER_Y = HEIGHT / 2;
+        document.querySelector("#widthValue").innerHTML = this.value;
+
+       });
+
+       document.querySelector('#height').addEventListener("change", function() {
+        if (this.value < 50) { alert('Eh?'); return; }
+        HEIGHT = this.value;
+        DIST = WIDTH / SHAPES;
+        CENTER_X = WIDTH / 2;
+        CENTER_Y = HEIGHT / 2;
+        document.querySelector("#heightValue").innerHTML = this.value;
+
+       });
+    }
+
+   
+  </script>
+</body>
+</html>
